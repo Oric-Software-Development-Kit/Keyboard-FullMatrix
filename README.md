@@ -18,7 +18,11 @@ The **ReadKey** text will also show the name and ASCII code value of the last pr
 - **'LEFT SHIFT' (3)**
 - or **'\<none\>' (0)** if no keys are pressed
 
-And finally, the Practice Edit Field will show what you have been typing
+The **----** at the bottom right shows the status of the modifiers key (C for Control, S for Shift, F for Function).
+
+The **caps** will change into **CAPS** when using CTRL-T and represents the current 'caps lock' status.
+
+And finally, the Practice Edit Field will show what you have been typing, it supports caps lock, shifting, and deleting as well.
 
 # Reasons
 If you are wondering why anyone would want to reinvent the wheel, you need to know a few things about the Oric:
@@ -32,7 +36,6 @@ So obviously if you disable the ROM you have to do everything yourself, includin
 This code is not trying to be a complete recreation of the system ROM; which means...
 - It does not support things like auto-repeat when a key is pressed
 - It does not do nice KLICK and KLOCK sounds when you press keys
-- It does not separate the normal keys (A, B, 1, ?, ...) and the dead keys (SHIFT, CONTROL, ...)
 
 # Authors
 This code is the result of a cooperation between multiple people.

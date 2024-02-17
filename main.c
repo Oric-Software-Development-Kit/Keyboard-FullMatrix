@@ -3,7 +3,7 @@
 // All keys are scanned and a  virtual matrix 
 // of 8 bytes is updated at each IRQ.     
 // --------------------------------------
-// (c) 2010-2020 Defence Force
+// (c) 2010-2024 Defence Force
 // Authors: Twilighte, Chema and Dbug
 // --------------------------------------
 // This code is provided as-is:
@@ -20,10 +20,24 @@
 
 #include <stdio.h>
 #include <lib.h>
-
 #include "keyboard.h"
 
 
+
+// Given a position in the 8x8 matrix, returns if the key at this location is pressed or not.
+// This is not 100% accuracte and depends of how many keys are pressed, and which rows they are on.
+// Don't test only on PC and expect that to work on the Oric, beyond two key pressed, you are in dangerous waters.
+unsigned char IsPressed(unsigned char matrix_position)
+{
+    unsigned char bitfield;
+    unsigned char bitkey;
+
+    bitkey=1 << (matrix_position&7);
+    bitfield=KeyMatrix[matrix_position>>3];
+    return bitfield & bitkey;    
+}
+
+// Given an ASCII code, returns a displayable string representing the key
 char* GetKeyName(unsigned char asciiCode)
 {
     if (!asciiCode)
@@ -67,14 +81,24 @@ char* GetKeyName(unsigned char asciiCode)
     return "<unknown>";
 }
 
-
+// Update a line at the bottom of the screen showing the status of the various modifier keys, CAPS Lock, etc...
 void ShowCurrentKeyStatus()
 {    
     unsigned char key=ReadKey();
-    sprintf((char*)(0xbb80+40*14),"%c%cReadKey: %c'%s' (%d)        ",16+6,4,5,GetKeyName(key),key);
+    sprintf((char*)(0xbb80+40*27),"%c%cReadKey: %c'%s' (%d)    ",16+6,4,5,GetKeyName(key),key);
+
+    sprintf((char*)(0xbb80+40*27+36),"%s",KeyCapsLock?"CAPS":"caps");
+
+    // Show the status of the Control, Shift and Function key at the bottom of the screen
+    sprintf((char*)(0xbb80+40*27+30),"%c%c%c%c"
+        ,IsPressed(VKEY_LEFT_CONTROL)?'C':'-'
+        ,IsPressed(VKEY_LEFT_SHIFT)?'S':'-'
+        ,IsPressed(VKEY_RIGHT_SHIFT)?'S':'-'
+        ,IsPressed(VKEY_FUNCTION)?'F':'-');        
+
 }
 
-
+// Shows the 8x8 keyboard matrix, in either UPPER or LOWER case depending of the Shift keys status
 void ShowKeyboardMatrix()
 {
     unsigned char* key;
@@ -83,11 +107,21 @@ void ShowKeyboardMatrix()
     char i,row;
     char mask;
      
-    key = &KeyAscii[0][0];
-    start=(char*)(0xbb80+40*3-10);
+    if (IsPressed(VKEY_LEFT_SHIFT) || IsPressed(VKEY_RIGHT_SHIFT))
+    {
+        // Shifted
+        key = &KeyAsciiLower[0][0];
+    }
+    else
+    {
+        // Unshifted
+        key = &KeyAsciiUpper[0][0];
+    }
+    start=(char*)(0xbb80+40*4-11);
     for (row=0;row<8;row++)
     {
         *start++ = 2;
+        *start++ = '0'+row;
         mask=KeyMatrix[row];
         for (i=0;i<8;i++)
         {
@@ -104,13 +138,13 @@ void ShowKeyboardMatrix()
             mask >>=1;
         }
         
-        start+=40-9;
+        start+=40-10;
     }
 }
 
 
 char EditField[36*4];
-unsigned char EditFieldSize=0;
+char EditFieldSize=0;
 
 void UpdateInputField()
 {
@@ -128,15 +162,23 @@ void UpdateInputField()
             if (EditFieldSize>0)
             {
                 EditFieldSize--;
-                EditField[EditFieldSize]='.';
+                EditField[EditFieldSize]=' ';
             }
         }
         else
         if ( (key>=32) && (key<128) )            
         {
-            EditField[EditFieldSize]=key;
-            EditFieldSize++;
+            if ( ( (key=='T') || (key=='t') ) && IsPressed(VKEY_LEFT_CONTROL) )
+            {
+                KeyCapsLock=!KeyCapsLock;
+            }
+            else
+            {                
+                EditField[EditFieldSize]=key;
+                EditFieldSize++;
+            }
         }
+
     }
 
     // Display the buffer
@@ -152,39 +194,56 @@ void UpdateInputField()
     }
 }
 
+
 void main()
 {
     setflags(SCREEN); // So we don't get the blinking cursor frozen after we disabled the IRQ
+    InitIRQ();
     paper(4);
     ink(6);
     cls();
     sprintf((char*)(0xbb80),"%c%c Complete Keyboard Matrix Read Demo%c",16+3,1,3);
 
     printf("\n");
-    printf("This virtual matrix is\n");
-    printf("updated by interrupts 50\n");
-    printf("times per second.\n\n");
+    printf("                             01234567\n");
+    printf("Space       \033B\174001\174          0\n");
+    printf("< ,         \033B\174002\174          1\n");
+    printf("> .         \033B\174004\174          2\n");
+    printf("Up Arrow    \033B\174008\174          3\n");
+    printf("Left Shift  \033B\174016\174<---      4\n");
+    printf("Left Arrow  \033B\174032\174          5\n");
+    printf("Down Arrow  \033B\174064\174          6\n");
+    printf("Right Arrow \033B\174128\174          7\n");
 
-    printf("Each of the 8 rows uses one\n");
-    printf("byte in the KeyMatrix. \n\n");
 
-    printf("Each of the 8 bit represents\n");
-    printf("activity in a given column\n\n");
+    printf("\n");
+	printf("This virtual matrix is updated by\n");
+	printf("interrupts 50 times per second.\n\n");
 
-    printf("Multiple keypresses are supported.\n");
+    printf("Each row uses one byte in the matrix,\n");
+    printf("and each bit represents a single key.\n\n");
 
-    printf("\n\n\nPractice Edit Field:\n\n");
+    printf("Practice Edit Field:\n\n");
 
-    InitIRQ();
-
-    memset(EditField,'.',sizeof(EditField));
     while (1)
     {
+        poke(0xbb80+40*3+1,(KeyRowArrows & KEY_MASK_SPACE)?1:3);
+        poke(0xbb80+40*4+1,(KeyRowArrows & KEY_MASK_LESS_THAN)?1:3);
+        poke(0xbb80+40*5+1,(KeyRowArrows & KEY_MASK_GREATER_THAN)?1:3);
+        poke(0xbb80+40*6+1,(KeyRowArrows & KEY_MASK_UP_ARROW)?1:3);
+        poke(0xbb80+40*7+1,(KeyRowArrows & KEY_MASK_LEFT_SHIFT)?1:3);
+        poke(0xbb80+40*8+1,(KeyRowArrows & KEY_MASK_LEFT_ARROW)?1:3);
+        poke(0xbb80+40*9+1,(KeyRowArrows & KEY_MASK_DOWN_ARROW)?1:3);
+        poke(0xbb80+40*10+1,(KeyRowArrows & KEY_MASK_RIGHT_ARROW)?1:3);
+
+        sprintf((char *)(0xbb80+40*7+25),"%u  ",KeyRowArrows);        
+
         ShowKeyboardMatrix();
 
         ShowCurrentKeyStatus();
 
         UpdateInputField();
+
     }   
 }
 

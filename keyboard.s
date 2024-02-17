@@ -27,6 +27,8 @@
 #define        via_ier                 $030E 
 #define        via_porta               $030f 
 
+#define KEY_FIRST_ASCII 6      // Values before that one are the modifier keys
+
     .zero
 
 irq_A               .dsb 1
@@ -38,8 +40,45 @@ tmprow				.dsb 1
 
     .text 
 
-_KeyMatrix          .dsb 8     ; The virtual Key Matrix
-oldKey              .dsb 1
+_KeyMatrix            .dsb 4     ; The virtual Key Matrix
+_KeyRowArrows         .dsb 4     ; The virtual Key Matrix
+_KeyCapsLock          .byt 1     ; By default we use CAPS letter
+
+KeyShiftPressed       .byt 0     ; Status of any of the SHIFT keys
+KeyLastPressed        .dsb 1     ; For the debouncing
+KeyCurrentPressed     .dsb 1     ; For the debouncing
+
+; Regarding SHIFT and CAPS LOCK:
+; - SHIFT does impact all the keys (letters, symbols, numbers)
+; - CAPS LOCK only impacts the actual letters
+
+; Some more routines, not actualy needed, but quite useful
+; for reading a single key (get the first active bit in 
+; the virtual matrix) and returning his ASCII value.
+; Should serve as an example about how to handle the keymap.
+; Both _ReadKey and _ReadKeyNoBounce can be used directly from 
+; C, declared as:
+
+
+_KeyAsciiUpper
+    .asc "7","N","5","V",KET_RCTRL,"1","X","3"
+    .asc "J","T","R","F",0,KEY_ESCAPE,"Q","D"
+    .asc "M","6","B","4",KEY_LCTRL,"Z","2","C"
+    .asc "K","9",59,"-",0,0,92,39
+    .asc " ",",",".",KEY_UP,KEY_LSHIFT,KEY_LEFT,KEY_DOWN,KEY_RIGHT
+    .asc "U","I","O","P",KEY_FUNCT,KEY_DELETE,"]","["
+    .asc "Y","H","G","E",0,"A","S","W"
+    .asc "8","L","0","\",KEY_RSHIFT,KEY_RETURN,0,"="
+
+_KeyAsciiLower
+    .asc "&","n","%","v",KET_RCTRL,"!","x","#"
+    .asc "j","t","r","f",0,KEY_ESCAPE,"q","d"
+    .asc "m","^","b","$",KEY_LCTRL,"z","@","c"
+    .asc "k","(",59,95,0,0,92,39
+    .asc " ","<",">",KEY_UP,KEY_LSHIFT,KEY_LEFT,KEY_DOWN,KEY_RIGHT
+    .asc "u","i","o","p",KEY_FUNCT,KEY_DELETE,"}","{"
+    .asc "y","h","g","e",0,"a","s","w"
+    .asc "*","l",")","|",KEY_RSHIFT,KEY_RETURN,0,"="
 
 
 _InitIRQ
@@ -116,7 +155,7 @@ ReadKeyboard
 
     ldx #7 
 
-loop2   ;Clear relevant bank 
+loop_row   ;Clear relevant bank 
     lda #00 
     sta _KeyMatrix,x 
 
@@ -152,7 +191,7 @@ loop2   ;Clear relevant bank
 
     ; Store Column 
     tya
-loop1   
+loop_column   
     eor #$FF 
 
 	sta via_porta 
@@ -186,75 +225,105 @@ skip1   ;Proceed to next column
     tya 
     lsr 
     tay 
-    bcc loop1 
+    bcc loop_column 
 
 skip2   ;Proceed to next row 
     dex 
-    bpl loop2 
+    bpl loop_row 
 
     rts 
 .)  
 
-
-; Some more routines, not actualy needed, but quite useful
-; for reading a single key (get the first active bit in 
-; the virtual matrix) and returning his ASCII value.
-; Should serve as an example about how to handle the keymap.
-; Both _ReadKey and _ReadKeyNoBounce can be used directly from 
-; C, declared as:
-
-
-_KeyAscii
-    .asc "7","N","5","V",KET_RCTRL,"1","X","3"
-    .asc "J","T","R","F",0,KEY_ESCAPE,"Q","D"
-    .asc "M","6","B","4",KEY_LCTRL,"Z","2","C"
-    .asc "K","9",59,"-",0,0,92,39
-    .asc " ",",",".",KEY_UP,KEY_LSHIFT,KEY_LEFT,KEY_DOWN,KEY_RIGHT
-    .asc "U","I","O","P",KEY_FUNCT,KEY_DELETE,"]","["
-    .asc "Y","H","G","E",0,"A","S","W"
-    .asc "8","L","0","/",KEY_RSHIFT,KEY_RETURN,0,"="
 
 
 ; Reads a key (single press, but repeating) and returns his ASCII value in reg X. 
 ; Z=1 if no keypress detected.
 _ReadKey
 .(
-	ldx #7
-loop
-	lda _KeyMatrix,x
-	beq skip
+    ; Start by checking modifiers... because that modifies the keys...    
+    ldx #1
 
-	ldy #$ff
-loop2
-	iny
-	lsr
-	bcc loop2
-	txa
-	asl
-	asl
-	asl
-	sty tmprow
-	clc
-	adc tmprow
-	tax
-	lda _KeyAscii,x
-    tax
-	rts
-skip
-	dex
-	bpl loop
+    lda _KeyMatrix+(VKEY_LEFT_SHIFT/8)
+    and #1 << (VKEY_LEFT_SHIFT & 7)
+    bne shift_pressed
+    lda _KeyMatrix+(VKEY_RIGHT_SHIFT/8)
+    and #1 << (VKEY_RIGHT_SHIFT & 7)
+    bne shift_pressed
 
     ldx #0
+
++shift_pressed
+    txa
+    sta KeyShiftPressed
+
+    ; Then we do the proper matrix scan
+	ldx #7
+loop_row
+	lda _KeyMatrix,x
+	beq next_row
+
+    sta tmprow
+
+    txa
+    asl
+    asl
+    asl
+    tay 
+
+    lda tmprow
+loop_column
+	iny
+	lsr tmprow
+	bcc loop_column
+
+	lda _KeyAsciiLower-1,y
+    cmp #KEY_FIRST_ASCII
+    bcs ascii_key
+
+not_ascii_key
+    lda tmprow
+    bne loop_column
+
+next_row
+	dex
+	bpl loop_row
+
+    ldx #0
+    stx KeyCurrentPressed
 	rts
+
+ascii_key
+    sta KeyCurrentPressed
+    cmp #97              // 'a'
+    bcc not_letter
+    cmp #122+1           // 'z'
+    bcs not_letter
+    ; For actual letters, we need to take into consideration both CAPS LOCK and SHIFT keys
+    pha
+    lda KeyShiftPressed
+    eor _KeyCapsLock
+    sta KeyShiftPressed
+    pla
+
+not_letter
+    ; For non letter character, we only use the SHIFT Status
+    asl KeyShiftPressed
+    beq not_shifted
+    lda _KeyAsciiUpper-1,y
+not_shifted
+
+    tax
+    rts
 .)
 
 ; Read a single key, same as before but no repeating.
 _ReadKeyNoBounce
 .(
 	jsr _ReadKey
-    cpx oldKey
+    lda KeyCurrentPressed
+    cmp KeyLastPressed
 	beq retz
-	stx oldKey
+	sta KeyLastPressed
 	rts
 retz
 	ldx #0

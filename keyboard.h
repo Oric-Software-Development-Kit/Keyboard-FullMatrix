@@ -16,11 +16,14 @@ extern void InitIRQ();
 // http://wiki.defence-force.org/doku.php?id=oric:hardware:oric_keyboard 
 
 extern unsigned char KeyMatrix[8];
-extern unsigned char KeyAscii[8][8];
+extern unsigned char KeyRowArrows;         // One bit per key pressed (actual part of KeyMatrix)
+
+extern unsigned char KeyAsciiUpper[8][8];
+extern unsigned char KeyAsciiLower[8][8];
+extern unsigned char KeyCapsLock;           // Used to force the SHIFTed status of letters
 
 extern unsigned char ReadKey();             // Reads a key (single press, but repeating) and returns his ASCII value
 extern unsigned char ReadKeyNoBounce();     // Read a single key, same as before but no repeating.
-
 #endif
 
 
@@ -47,3 +50,18 @@ extern unsigned char ReadKeyNoBounce();     // Read a single key, same as before
 #define KEY_SPACE       32
 #define KEY_DELETE      127
 
+
+// Using these defines, you can easily check the content of KeyRowArrows
+#define KEY_MASK_SPACE        1
+#define KEY_MASK_LESS_THAN    2
+#define KEY_MASK_GREATER_THAN 4
+#define KEY_MASK_UP_ARROW     8
+#define KEY_MASK_LEFT_SHIFT   16
+#define KEY_MASK_LEFT_ARROW   32
+#define KEY_MASK_DOWN_ARROW   64
+#define KEY_MASK_RIGHT_ARROW  128
+
+#define VKEY_LEFT_CONTROL     20        // Control key (left one on PC)
+#define VKEY_LEFT_SHIFT       36        // Left Shift key
+#define VKEY_RIGHT_SHIFT      60        // Right Shift key
+#define VKEY_FUNCTION          4        // Function key (right Control key on PC)
