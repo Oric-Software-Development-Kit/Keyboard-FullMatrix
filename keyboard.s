@@ -87,23 +87,23 @@ _InitIRQ
     ; setup, we need not worry about ensuring one irq event and/or right 
     ; timer period, only redirecting irq vector to our own irq handler. 
     sei
-	; Setup DDRA, DDRB and ACR
+    ; Setup DDRA, DDRB and ACR
     lda #%11111111
     sta via_ddra
-	lda #%11110111 ; PB0-2 outputs, PB3 input.
-	sta via_ddrb
-	lda #%1000000
-	sta via_acr
+    lda #%11110111 ; PB0-2 outputs, PB3 input.
+    sta via_ddrb
+    lda #%1000000
+    sta via_acr
 
-	; Since this is an slow process, we set the VIA timer to 
-	; issue interrupts at 25Hz, instead of 100 Hz. This is 
-	; not necessary -- it depends on your needs
-	lda #<40000
-	sta via_t1ll 
-	lda #>40000
-	sta via_t1lh
-	
-	; Patch IRQ vector
+    ; Since this is an slow process, we set the VIA timer to 
+    ; issue interrupts at 25Hz, instead of 100 Hz. This is 
+    ; not necessary -- it depends on your needs
+    lda #<40000
+    sta via_t1ll 
+    lda #>40000
+    sta via_t1lh
+
+    ; Patch IRQ vector
     lda #<irq_routine 
     sta IRQ_ADDRLO
     lda #>irq_routine 
@@ -117,9 +117,9 @@ _InitIRQ
 irq_routine 
 .(
     ; Preserve registers 
-  	sta irq_A
-	stx irq_X
-	sty irq_Y
+    sta irq_A
+    stx irq_X
+    sty irq_Y
 
     ; Clear IRQ event 
     lda via_t1cl 
@@ -129,8 +129,8 @@ irq_routine
 
     ; Restore Registers 
     lda irq_A
-	ldx irq_X
-	ldy irq_Y
+    ldx irq_X
+    ldy irq_Y
 
     ; End of IRQ 
     rti 
@@ -148,8 +148,8 @@ ReadKeyboard
     lda #$FF 
     sta via_pcr 
 
-	; Clear CB2, as keeping it high hangs on some orics.
-	; Pitty, as all this code could be run only once, otherwise
+    ; Clear CB2, as keeping it high hangs on some orics.
+    ; Pitty, as all this code could be run only once, otherwise
     ldy #$dd 
     sty via_pcr 
 
@@ -161,7 +161,7 @@ loop_row   ;Clear relevant bank
 
     ; Write 0 to Column Register 
 
-	sta via_porta 
+    sta via_porta 
     lda #$fd 
     sta via_pcr 
     lda #$dd
@@ -174,13 +174,13 @@ loop_row   ;Clear relevant bank
     ora zpTemp02 
     sta via_portb 
 
-    
+
     ; Wait 10 cycles for circuit to settle on new row 
     ; Use time to load inner loop counter and load Bit 
 
-	; CHEMA: Fabrice Broche uses 4 cycles (lda #8:inx) plus
-	; the four cycles of the and absolute. That is 8 cycles.
-	; So I guess that I could do the same here (ldy,lda)
+    ; CHEMA: Fabrice Broche uses 4 cycles (lda #8:inx) plus
+    ; the four cycles of the and absolute. That is 8 cycles.
+    ; So I guess that I could do the same here (ldy,lda)
 
     ldy #$80
     lda #8 
@@ -194,7 +194,7 @@ loop_row   ;Clear relevant bank
 loop_column   
     eor #$FF 
 
-	sta via_porta 
+    sta via_porta 
     lda #$fd 
     sta via_pcr 
     lda #$dd
@@ -257,10 +257,10 @@ _ReadKey
     sta KeyShiftPressed
 
     ; Then we do the proper matrix scan
-	ldx #7
+    ldx #7
 loop_row
-	lda _KeyMatrix,x
-	beq next_row
+    lda _KeyMatrix,x
+    beq next_row
 
     sta tmprow
 
@@ -272,11 +272,11 @@ loop_row
 
     lda tmprow
 loop_column
-	iny
-	lsr tmprow
-	bcc loop_column
+    iny
+    lsr tmprow
+    bcc loop_column
 
-	lda _KeyAsciiLower-1,y
+    lda _KeyAsciiLower-1,y
     cmp #KEY_FIRST_ASCII
     bcs ascii_key
 
@@ -285,12 +285,12 @@ not_ascii_key
     bne loop_column
 
 next_row
-	dex
-	bpl loop_row
+    dex
+    bpl loop_row
 
     ldx #0
     stx KeyCurrentPressed
-	rts
+    rts
 
 ascii_key
     sta KeyCurrentPressed
@@ -319,15 +319,15 @@ not_shifted
 ; Read a single key, same as before but no repeating.
 _ReadKeyNoBounce
 .(
-	jsr _ReadKey
+    jsr _ReadKey
     lda KeyCurrentPressed
     cmp KeyLastPressed
-	beq retz
-	sta KeyLastPressed
-	rts
+    beq retz
+    sta KeyLastPressed
+    rts
 retz
-	ldx #0
-	rts
+    ldx #0
+    rts
 .)
 
 
