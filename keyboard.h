@@ -20,7 +20,7 @@ extern unsigned char KeyRowArrows;         // One bit per key pressed (actual pa
 
 extern unsigned char KeyAsciiUpper[8][8];
 extern unsigned char KeyAsciiLower[8][8];
-extern unsigned char KeyCapsLock;           // Used to force the SHIFTed status of letters
+extern unsigned char KeyCapsLock;           // Used to force the SHIFTed status of letters (only acceptable values are 0 and 1)
 
 extern unsigned char ReadKey();             // Reads a key (single press, but repeating) and returns his ASCII value
 extern unsigned char ReadKeyNoBounce();     // Read a single key, same as before but no repeating.
