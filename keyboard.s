@@ -42,11 +42,7 @@ tmprow				.dsb 1
 
 _KeyMatrix            .dsb 4     ; The virtual Key Matrix (top half)
 _KeyRowArrows         .dsb 4     ; The virtual Key Matrix (bottom half starting on the row with the arrows and the space bar)
-_KeyCapsLock          .byt 1     ; By default we use CAPS letter
-
-KeyShiftPressed       .byt 0     ; Status of any of the SHIFT keys
-KeyLastPressed        .dsb 1     ; For the debouncing
-KeyCurrentPressed     .dsb 1     ; For the debouncing
+_KeyCapsLock          .byt 1     ; By default we use CAPS letter (only acceptable values are 0 and 1)
 
 ; Regarding SHIFT and CAPS LOCK:
 ; - SHIFT does impact all the keys (letters, symbols, numbers)
@@ -243,18 +239,18 @@ _ReadKey
     ; Start by checking modifiers... because that modifies the keys...    
     ldx #1
 
-    lda _KeyMatrix+(VKEY_LEFT_SHIFT/8)
-    and #1 << (VKEY_LEFT_SHIFT & 7)
+    lda _KeyMatrix+(VKEY_LEFT_SHIFT/8)     ; Load the matrix row containing the Left Shift key
+    and #1 << (VKEY_LEFT_SHIFT & 7)        ; Check the bit for the column used by that key
     bne shift_pressed
-    lda _KeyMatrix+(VKEY_RIGHT_SHIFT/8)
-    and #1 << (VKEY_RIGHT_SHIFT & 7)
+    lda _KeyMatrix+(VKEY_RIGHT_SHIFT/8)    ; Load the matrix row containing the Right Shift key
+    and #1 << (VKEY_RIGHT_SHIFT & 7)       ; Check the bit for the column used by that key
     bne shift_pressed
 
     ldx #0
 
-+shift_pressed
+shift_pressed
     txa
-    sta KeyShiftPressed
+    sta __auto_shift_pressed
 
     ; Then we do the proper matrix scan
     ldx #7
@@ -289,25 +285,26 @@ next_row
     bpl loop_row
 
     ldx #0
-    stx KeyCurrentPressed
+    stx __auto_raw_current_key_code
     rts
 
 ascii_key
-    sta KeyCurrentPressed
+    sta __auto_raw_current_key_code
     cmp #97              // 'a'
     bcc not_letter
     cmp #122+1           // 'z'
     bcs not_letter
     ; For actual letters, we need to take into consideration both CAPS LOCK and SHIFT keys
     pha
-    lda KeyShiftPressed
+__auto_shift_pressed = *+1     ; Status of any of the SHIFT keys
+    lda #0
     eor _KeyCapsLock
-    sta KeyShiftPressed
+    sta __auto_shift_pressed
     pla
 
 not_letter
     ; For non letter character, we only use the SHIFT Status
-    asl KeyShiftPressed
+    asl __auto_shift_pressed
     beq not_shifted
     lda _KeyAsciiUpper-1,y
 not_shifted
@@ -320,13 +317,15 @@ not_shifted
 _ReadKeyNoBounce
 .(
     jsr _ReadKey
-    lda KeyCurrentPressed
-    cmp KeyLastPressed
++__auto_raw_current_key_code = *+1     ; For the debouncing: Current raw value (shift ignored) of the pressed key
+    lda #0
+__auto_raw_previous_key_code = *+1     ; For the debouncing: Raw value of the key from the previous call
+    cmp #0
     beq retz
-    sta KeyLastPressed
+    sta __auto_raw_previous_key_code   ; The key is different
     rts
 retz
-    ldx #0
+    ldx #0                             ; The same key is still being pressed
     rts
 .)
 
