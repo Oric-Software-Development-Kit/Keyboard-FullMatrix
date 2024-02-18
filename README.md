@@ -18,7 +18,7 @@ The **ReadKey** text will also show the name and ASCII code value of the last pr
 - **'LEFT SHIFT' (3)**
 - or **'\<none\>' (0)** if no keys are pressed
 
-The **----** at the bottom right shows the status of the modifiers key (C for Control, S for Shift, F for Function).
+The **----** on the same line shows the status of the modifiers key (C for Control, S for Shift, F for Function).
 
 The **caps** will change into **CAPS** when using CTRL-T and represents the current 'caps lock' status.
 

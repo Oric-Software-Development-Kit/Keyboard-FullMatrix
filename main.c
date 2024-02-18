@@ -85,12 +85,12 @@ char* GetKeyName(unsigned char asciiCode)
 void ShowCurrentKeyStatus()
 {    
     unsigned char key=ReadKey();
-    sprintf((char*)(0xbb80+40*27),"%c%cReadKey: %c'%s' (%d)    ",16+6,4,5,GetKeyName(key),key);
+    sprintf((char*)(0xbb80+40*12),"%c%cReadKey: %c'%s' (%d)    ",16+6,4,5,GetKeyName(key),key);
 
-    sprintf((char*)(0xbb80+40*27+36),"%s",KeyCapsLock?"CAPS":"caps");
+    sprintf((char*)(0xbb80+40*12+36),"%s",KeyCapsLock?"CAPS":"caps");
 
     // Show the status of the Control, Shift and Function key at the bottom of the screen
-    sprintf((char*)(0xbb80+40*27+30),"%c%c%c%c"
+    sprintf((char*)(0xbb80+40*12+30),"%c%c%c%c"
         ,IsPressed(VKEY_LEFT_CONTROL)?'C':'-'
         ,IsPressed(VKEY_LEFT_SHIFT)?'S':'-'
         ,IsPressed(VKEY_RIGHT_SHIFT)?'S':'-'
@@ -183,11 +183,11 @@ void UpdateInputField()
 
     // Display the buffer
     buffer=EditField;
-    screen=(char*)(0xbb80+40*18);
+    screen=(char*)(0xbb80+40*24);
     for (y=0;y<4;y++)
     {
-        screen[0] = 16+6;
-        screen[1] = 4;
+        screen[0] = 16+7;
+        screen[1] = 0;
         memcpy(screen+2,buffer,36);
         buffer+=36;
         screen+=40;
@@ -217,11 +217,15 @@ void main()
 
 
     printf("\n");
+    printf("\n");
+    printf("\n");
 	printf("This virtual matrix is updated by\n");
 	printf("interrupts 50 times per second.\n\n");
 
     printf("Each row uses one byte in the matrix,\n");
     printf("and each bit represents a single key.\n\n");
+
+    printf("Use CTRL-T to change CAPS status\n\n");
 
     printf("Practice Edit Field:\n\n");
 
