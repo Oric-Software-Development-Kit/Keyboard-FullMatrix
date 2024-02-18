@@ -40,8 +40,8 @@ tmprow				.dsb 1
 
     .text 
 
-_KeyMatrix            .dsb 4     ; The virtual Key Matrix
-_KeyRowArrows         .dsb 4     ; The virtual Key Matrix
+_KeyMatrix            .dsb 4     ; The virtual Key Matrix (top half)
+_KeyRowArrows         .dsb 4     ; The virtual Key Matrix (bottom half starting on the row with the arrows and the space bar)
 _KeyCapsLock          .byt 1     ; By default we use CAPS letter
 
 KeyShiftPressed       .byt 0     ; Status of any of the SHIFT keys
@@ -61,7 +61,7 @@ KeyCurrentPressed     .dsb 1     ; For the debouncing
 
 
 _KeyAsciiUpper
-    .asc "7","N","5","V",KET_RCTRL,"1","X","3"
+    .asc "7","N","5","V",KEY_RCTRL,"1","X","3"
     .asc "J","T","R","F",0,KEY_ESCAPE,"Q","D"
     .asc "M","6","B","4",KEY_LCTRL,"Z","2","C"
     .asc "K","9",59,"-",0,0,92,39
@@ -71,7 +71,7 @@ _KeyAsciiUpper
     .asc "8","L","0","\",KEY_RSHIFT,KEY_RETURN,0,"="
 
 _KeyAsciiLower
-    .asc "&","n","%","v",KET_RCTRL,"!","x","#"
+    .asc "&","n","%","v",KEY_RCTRL,"!","x","#"
     .asc "j","t","r","f",0,KEY_ESCAPE,"q","d"
     .asc "m","^","b","$",KEY_LCTRL,"z","@","c"
     .asc "k","(",59,95,0,0,92,39

@@ -60,7 +60,7 @@ char* GetKeyName(unsigned char asciiCode)
         {
         // Modifier keys
         case KEY_LCTRL:     return "LEFT CTRL";
-        case KET_RCTRL:     return "RIGHT CTRL";
+        case KEY_RCTRL:     return "RIGHT CTRL";
         case KEY_LSHIFT:    return "LEFT SHIFT";
         case KEY_RSHIFT:    return "RIGHT SHIFT";
         case KEY_FUNCT:     return "FUNCTION";
@@ -146,11 +146,25 @@ void ShowKeyboardMatrix()
 char EditField[36*4];
 char EditFieldSize=0;
 
-void UpdateInputField()
+void DisplayInputField()
 {
     int y;
     char* screen;
     char* buffer;
+    buffer=EditField;
+    screen=(char*)(0xbb80+40*24);
+    for (y=0;y<4;y++)
+    {
+        screen[0] = 16+7;
+        screen[1] = 0;
+        memcpy(screen+2,buffer,36);
+        buffer+=36;
+        screen+=40;
+    }
+}
+
+void UpdateInputField()
+{
     char key;
 
     // Check if we have new keys, and do something about it
@@ -178,19 +192,7 @@ void UpdateInputField()
                 EditFieldSize++;
             }
         }
-
-    }
-
-    // Display the buffer
-    buffer=EditField;
-    screen=(char*)(0xbb80+40*24);
-    for (y=0;y<4;y++)
-    {
-        screen[0] = 16+7;
-        screen[1] = 0;
-        memcpy(screen+2,buffer,36);
-        buffer+=36;
-        screen+=40;
+        DisplayInputField();
     }
 }
 
@@ -228,7 +230,8 @@ void main()
     printf("Use CTRL-T to change CAPS status\n\n");
 
     printf("Practice Edit Field:\n\n");
-
+    DisplayInputField();
+    
     while (1)
     {
         poke(0xbb80+40*3+1,(KeyRowArrows & KEY_MASK_SPACE)?1:3);

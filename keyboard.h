@@ -35,7 +35,7 @@ extern unsigned char ReadKeyNoBounce();     // Read a single key, same as before
 // space.
 
 #define KEY_LCTRL       1
-#define KET_RCTRL       2
+#define KEY_RCTRL       2
 #define KEY_LSHIFT      3
 #define KEY_RSHIFT      4
 #define KEY_FUNCT       5
