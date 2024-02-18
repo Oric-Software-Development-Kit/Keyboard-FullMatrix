@@ -46,4 +46,4 @@ This code is the result of a cooperation between multiple people.
 # Additional information
 You can find more information on the topic in various places:
 - [The Oric Keyboard matrix](https://wiki.defence-force.org/doku.php?id=oric:hardware:oric_keyboard) on the Defence Force wiki
-- [Keyboard Handling article (part 1)](https://osdk.org/index.php?page=articles&ref=ART16) in the OSDK articles section
+- [Keyboard Handling article (part 2)](https://osdk.org/index.php?page=articles&ref=ART20) in the OSDK articles section
